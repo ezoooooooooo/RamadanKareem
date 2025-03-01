@@ -63,44 +63,11 @@ const memeImages = [
     'images/meme32.jpg',
     'images/meme33.jpg',
     'images/meme34.jpg',
-
-    
 ];
-
-// Meme text and quotes
-// const memeVariations = [
-//     {
-//         text: "تم تعبئة الكرش بنجاح",
-//         quote: "بعد طبق الكنافة الثالث... والله ما فيني أكل خلاص!"
-//     },
-//     {
-//         text: "كرش: 100% مكتمل",
-//         quote: "هل يعقل أن أكل طبق حلو بعد كل هذا الطعام؟ نعم يعقل."
-//     },
-//     {
-//         text: "محرك البحث عن مساحة للطعام",
-//         quote: "ما زال هناك مكان للقطايف!"
-//     },
-//     {
-//         text: "أخيراً... عاد الكرش لشكله الطبيعي",
-//         quote: "صائم طوال اليوم... ثم يأكل وجبة تكفي لثلاثة أيام!"
-//     },
-//     {
-//         text: "الكرش: أنا عائد يا صديقي",
-//         quote: "نوى الصيام لينقص وزنه، وأفطر ليزيده!"
-//     },
-//     {
-//         text: "تحميل الكرش... 100% اكتمل",
-//         quote: "يارب إني صمت لك وعلى رزقك أفطرت... وعلى رزق الناس كلهم كمان!"
-//     }
-//     // Add more variations as needed
-// ];
 
 // Generate button functionality
 const generateBtn = document.getElementById('generateBtn');
 const memeImage = document.getElementById('memeImage');
-const memeText = document.getElementById('memeText');
-const quoteElement = document.getElementById('quote');
 const loadingOverlay = document.getElementById('loadingOverlay');
 
 // Generate a random meme on page load
@@ -121,14 +88,8 @@ function generateNewMeme() {
         const randomImageIndex = Math.floor(Math.random() * memeImages.length);
         const randomImage = memeImages[randomImageIndex];
         
-        // Get random text and quote
-        const randomTextIndex = Math.floor(Math.random() * memeVariations.length);
-        const randomMeme = memeVariations[randomTextIndex];
-        
-        // Update meme image, text and quote
+        // Update meme image
         memeImage.src = randomImage;
-        memeText.textContent = randomMeme.text;
-        quoteElement.textContent = randomMeme.quote;
         
         // Hide loading overlay
         loadingOverlay.style.display = 'none';
@@ -137,10 +98,6 @@ function generateNewMeme() {
 
 // Iftar time calculation and countdown
 function setupIftarTime() {
-    // API endpoint for prayer times - Replace with your API key and location
-    const latitude = 0; // Default values
-    const longitude = 0;
-    
     // Try to get user's location
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(position => {
@@ -158,10 +115,9 @@ function setupIftarTime() {
 
 function promptForLocation() {
     // You can replace this with a proper UI for location input
-    const city = prompt("Please enter your city name to get accurate iftar time:", "Mecca");
+    const city = prompt("أدخل اسم مدينتك للحصول على وقت الإفطار الدقيق:", "مكة");
     if (city) {
         // Use a geocoding service to convert city name to coordinates
-        // For now, we'll use a dummy function
         fetchIftarTimeByCity(city);
     } else {
         // Use default iftar time if user cancels
@@ -171,7 +127,6 @@ function promptForLocation() {
 
 function fetchPrayerTimes(latitude, longitude) {
     // Use a prayer times API
-    // Example API: https://aladhan.com/prayer-times-api
     const date = new Date();
     const month = date.getMonth() + 1;
     const year = date.getFullYear();
@@ -180,13 +135,17 @@ function fetchPrayerTimes(latitude, longitude) {
         .then(response => response.json())
         .then(data => {
             const today = date.getDate() - 1; // API uses 0-based index for days
-            const maghribTime = data.data[today].timings.Maghrib;
-            
-            // Set iftar time display
-            document.getElementById('iftarTime').textContent = `موعد الإفطار: ${maghribTime}`;
-            
-            // Start countdown
-            startCountdown(maghribTime);
+            if (data.data && data.data[today] && data.data[today].timings && data.data[today].timings.Maghrib) {
+                const maghribTime = data.data[today].timings.Maghrib;
+                
+                // Set iftar time display
+                document.getElementById('iftarTime').textContent = `موعد الإفطار: ${maghribTime}`;
+                
+                // Start countdown
+                startCountdown(maghribTime);
+            } else {
+                setDefaultIftarTime();
+            }
         })
         .catch(error => {
             console.error("Error fetching prayer times:", error);
@@ -196,7 +155,6 @@ function fetchPrayerTimes(latitude, longitude) {
 
 function fetchIftarTimeByCity(city) {
     // Use an API that accepts city names
-    // For demonstration, we'll use aladhan.com's city endpoint
     const date = new Date();
     const month = date.getMonth() + 1;
     const year = date.getFullYear();
@@ -205,10 +163,14 @@ function fetchIftarTimeByCity(city) {
         .then(response => response.json())
         .then(data => {
             const today = date.getDate() - 1;
-            const maghribTime = data.data[today].timings.Maghrib;
-            
-            document.getElementById('iftarTime').textContent = `موعد الإفطار: ${maghribTime}`;
-            startCountdown(maghribTime);
+            if (data.data && data.data[today] && data.data[today].timings && data.data[today].timings.Maghrib) {
+                const maghribTime = data.data[today].timings.Maghrib;
+                
+                document.getElementById('iftarTime').textContent = `موعد الإفطار: ${maghribTime}`;
+                startCountdown(maghribTime);
+            } else {
+                setDefaultIftarTime();
+            }
         })
         .catch(error => {
             console.error("Error fetching prayer times by city:", error);
@@ -240,9 +202,7 @@ function startCountdown(iftarTimeString) {
             document.getElementById('hours').textContent = "00";
             document.getElementById('minutes').textContent = "00";
             document.getElementById('seconds').textContent = "00";
-            
-            // Optional: Show "Iftar time has passed" message
-            // document.getElementById('iftarTime').textContent = "تم حلول وقت الإفطار، تقبل الله صيامكم";
+            document.getElementById('iftarTime').textContent = "تم حلول وقت الإفطار، تقبل الله صيامكم";
             
             clearInterval(countdownInterval);
             return;
@@ -267,7 +227,7 @@ document.getElementById('shareBtn').addEventListener('click', () => {
     if (navigator.share) {
         navigator.share({
             title: 'تم تعبئة الكرش بنجاح - ميم رمضاني',
-            text: document.getElementById('quote').textContent,
+            text: 'شاهد هذا الميم الرمضاني المضحك!',
             url: window.location.href
         })
         .then(() => console.log('Shared successfully'))
